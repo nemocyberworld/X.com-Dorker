@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>X.com Bug Bounty Dorker Tool</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col items-center p-6">
+
+  <header class="mb-8 text-center max-w-2xl w-full">
+    <h1 class="text-4xl font-extrabold mb-2 text-gradient bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 bg-clip-text text-transparent">
+      X.com Bug Bounty Dorker Tool
+    </h1>
+    <p class="text-gray-400 max-w-xl mx-auto">
+      Target domains, subdomains, or keywords to uncover hidden gems for bug bounty hunting.
+    </p>
+  </header>
+
+  <main class="w-full max-w-3xl bg-gray-800 rounded-lg shadow-lg p-6">
+
+    <label for="targetInput" class="block mb-2 font-semibold text-lg">Enter Target Domain / Subdomain / Keyword:</label>
+    <input
+      type="text"
+      id="targetInput"
+      placeholder="e.g. example.com or sub.example.com"
+      class="w-full p-3 rounded-md bg-gray-700 text-gray-100 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 mb-6"
+      autocomplete="off"
+    />
+
+    <label for="dorkInput" class="block mb-2 font-semibold text-lg">Generated Dork / Search Query:</label>
+    <textarea
+      id="dorkInput"
+      rows="4"
+      class="w-full p-3 rounded-md bg-gray-700 text-gray-100 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none mb-4"
+      placeholder="Select a dork from below or type your own here"
+    ></textarea>
+
+    <button
+      id="searchBtn"
+      class="w-full bg-purple-600 hover:bg-purple-700 transition rounded-md py-3 font-semibold text-lg shadow-md mb-8"
+      aria-label="Search Twitter"
+    >
+      🔍 Search X
+    </button>
+
+    <section class="mb-8">
+      <h2 class="text-2xl font-semibold mb-4 border-b border-gray-600 pb-2">Select a Bug Bounty Dork</h2>
+      <div id="dorkList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto p-2 bg-gray-700 rounded-md">
+        <!-- Dorks buttons inserted here -->
+      </div>
+    </section>
+
+    <section>
+      <h2 class="text-2xl font-semibold mb-4 border-b border-gray-600 pb-2">Saved Dorks</h2>
+      <div id="savedDorksList" class="space-y-2 max-h-60 overflow-y-auto p-2 bg-gray-700 rounded-md mb-4">
+        <!-- Saved dorks appear here -->
+      </div>
+
+      <button
+        id="resetBtn"
+        class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md"
+        aria-label="Reset saved dorks"
+      >
+        🗑️ Clear Saved Dorks
+      </button>
+    </section>
+
+  </main>
+
+  <footer class="mt-12 text-gray-500 text-sm text-center max-w-3xl w-full">
+    Made with ❤️ by H4K2LIV3 | Hosted on GitHub Pages
+  </footer>
+
+  <script>
+    const bugBountyDorks = [
+      { name: "Password Leaks", dork: "site:{{target}} password OR passwd OR credential -filter:retweets" },
+      { name: "Config Files", dork: "site:{{target}} filetype:env OR filetype:config" },
+      { name: "Admin/Login Pages", dork: "site:{{target}} \"admin panel\" OR \"login page\"" },
+      { name: "API/Secret Keys", dork: "site:{{target}} \"api key\" OR \"secret key\"" },
+      { name: "Email Leaks", dork: "\"@{{target}}\" -filter:retweets" },
+      { name: "AWS Keys", dork: "site:{{target}} aws_access_key_id OR aws_secret_access_key" },
+      { name: "Private Keys", dork: "site:{{target}} private_key OR id_rsa" },
+      { name: "Debug Info", dork: "site:{{target}} debug OR trace OR error -filter:retweets" },
+      { name: "Backup Files", dork: "site:{{target}} backup OR .bak OR .old" },
+      { name: "Database Info", dork: "site:{{target}} database OR db_password OR db_user" },
+      { name: "Jenkins Info", dork: "site:{{target}} jenkins -filter:retweets" },
+      { name: "Dockerfiles", dork: "site:{{target}} dockerfile OR docker-compose" },
+      { name: "Kubernetes Secrets", dork: "site:{{target}} kubernetes secrets OR configmap" },
+      { name: "OAuth Tokens", dork: "site:{{target}} oauth_token OR access_token" },
+      { name: "Sensitive Comments", dork: "site:{{target}} \"TODO\" OR \"FIXME\" OR \"HACK\"" },
+      { name: "Social Security Numbers", dork: "site:{{target}} \"ssn\" OR \"social security number\"" },
+      { name: "Credit Card Numbers", dork: "site:{{target}} \"credit card\" OR \"cc number\"" },
+      { name: "Phone Numbers", dork: "site:{{target}} phone OR mobile" },
+      { name: "Error Logs", dork: "site:{{target}} \"stack trace\" OR \"error log\"" },
+      { name: "Internal IPs", dork: "site:{{target}} \"192.168.\" OR \"10.0.0.\"" },
+      { name: "GitHub Tokens", dork: "site:{{target}} \"ghp_\" OR \"github_token\"" },
+      { name: "Slack Tokens", dork: "site:{{target}} xoxp- OR xoxb-" },
+      { name: "Payment Info", dork: "site:{{target}} payment OR invoice" },
+      { name: "Session IDs", dork: "site:{{target}} sessionid OR sessid" },
+      { name: "User Credentials", dork: "site:{{target}} username OR userid OR password" },
+      { name: "Exposed AWS Buckets", dork: "site:{{target}} s3.amazonaws.com" },
+      { name: "Google Drive Docs", dork: "site:{{target}} drive.google.com filetype:doc OR filetype:pdf" },
+      { name: "Exposed Firebase URLs", dork: "site:{{target}} firebaseio.com" },
+      { name: "CI/CD Pipelines", dork: "site:{{target}} circleci OR travis-ci" },
+      { name: "Webcams or IoT", dork: "site:{{target}} \"webcamxp\" OR \"ip camera\"" },
+      { name: "Authorization Bypass", dork: "site:{{target}} \"Authorization:\" OR \"Bearer\"" },
+      { name: "JWT Tokens", dork: "site:{{target}} jwt_token OR jwt" },
+      { name: "Public SSH Keys", dork: "site:{{target}} id_rsa.pub OR ssh-rsa" },
+      { name: "Internal Docs", dork: "site:{{target}} \"internal documentation\" OR \"confidential\"" },
+      { name: "VPN Configs", dork: "site:{{target}} vpn OR openvpn" },
+      { name: "SQL Errors", dork: "site:{{target}} \"SQL syntax error\" OR \"mysql_fetch\"" },
+      { name: "XSS Testing", dork: "site:{{target}} \"<script>\" OR \"onerror=\"" },
+      { name: "CSRF Tokens", dork: "site:{{target}} csrf_token OR _csrf" },
+      { name: "File Upload Pages", dork: "site:{{target}} \"upload file\" OR \"file upload\"" },
+      { name: "Debug Mode", dork: "site:{{target}} debug=1 OR debug=true" },
+      { name: "Error Pages", dork: "site:{{target}} \"404 Not Found\" OR \"500 Internal Server Error\"" },
+      { name: "Backup DB Files", dork: "site:{{target}} db_backup OR backup.sql" },
+      { name: "Exposed Logs", dork: "site:{{target}} access.log OR error.log" },
+      { name: "Default Credentials", dork: "site:{{target}} \"admin:admin\" OR \"root:root\"" },
+      { name: "Exposed Jenkins", dork: "site:{{target}} jenkins intitle:login" },
+      { name: "PHP Info Pages", dork: "site:{{target}} phpinfo.php OR \"PHP Version\"" },
+      { name: "Open Redirects", dork: "site:{{target}} redirect= OR url=" },
+      { name: "Public Cloud Keys", dork: "site:{{target}} \"public key\" OR \"private key\"" },
+      { name: "Unprotected Directories", dork: "site:{{target}} index of /admin" },
+      { name: "Admin Emails", dork: "site:{{target}} email admin OR contact admin" },
+      { name: "Email Dumps", dork: "site:{{target}} email dump OR leaked emails" },
+      { name: "Source Code", dork: "site:{{target}} \"source code\" OR \"view source\"" },
+      { name: "Login Bypass", dork: "site:{{target}} \"login bypass\" OR \"auth bypass\"" },
+      { name: "SSRF Attempts", dork: "site:{{target}} url=http OR url=https" },
+      { name: "Cross-site Scripting", dork: "site:{{target}} <script>alert" },
+      { name: "Mobile App Secrets", dork: "site:{{target}} mobile OR ios OR android OR apk" },
+      { name: "Sensitive PDFs", dork: "site:{{target}} filetype:pdf confidential OR sensitive" },
+      { name: "Exposed SVN", dork: "site:{{target}} .svn" },
+      { name: "Exposed Git", dork: "site:{{target}} .git OR .gitignore" },
+      { name: "Environment Files", dork: "site:{{target}} .env" },
+      { name: "Temporary Files", dork: "site:{{target}} .tmp OR .temp" },
+      { name: "Open Ports Info", dork: "site:{{target}} portscan OR open port" },
+      { name: "Exposed API Docs", dork: "site:{{target}} api docs OR swagger" },
+      { name: "CMS Vulnerabilities", dork: "site:{{target}} wordpress OR drupal OR joomla" },
+      { name: "JavaScript Secrets", dork: "site:{{target}} var secret OR const secret" },
+      { name: "XML Files", dork: "site:{{target}} filetype:xml" },
+      { name: "Exposed FTP", dork: "site:{{target}} ftp://" },
+      { name: "Exposed RDP", dork: "site:{{target}} rdp://" },
+      { name: "Open Elasticsearch", dork: "site:{{target}} elasticsearch" },
+      { name: "Public S3 Buckets", dork: "site:{{target}} s3.amazonaws.com" },
+      { name: "Open MongoDB", dork: "site:{{target}} mongodb" },
+      { name: "Open Redis", dork: "site:{{target}} redis" },
+      { name: "Internal APIs", dork: "site:{{target}} internal api OR api_key" },
+      { name: "Test Pages", dork: "site:{{target}} test OR staging" },
+      { name: "Temporary Uploads", dork: "site:{{target}} upload OR temp" },
+      { name: "Debug Backdoors", dork: "site:{{target}} backdoor OR shell" },
+      { name: "Exposed Jenkins Jobs", dork: "site:{{target}} jenkins jobs" },
+      { name: "Old Website Versions", dork: "site:{{target}} old OR archive" },
+      { name: "Backup Configs", dork: "site:{{target}} config.bak OR config.old" },
+      { name: "Database Dumps", dork: "site:{{target}} dump OR sql OR db" },
+      { name: "Credentials in JS", dork: "site:{{target}} \"api_key\" OR \"token\"" },
+      { name: "Sensitive JSON", dork: "site:{{target}} filetype:json password OR secret" },
+      { name: "Open Source Code", dork: "site:{{target}} github.com OR gitlab.com" },
+      { name: "Password Reset Links", dork: "site:{{target}} \"reset password\"" },
+      { name: "Login Pages", dork: "site:{{target}} inurl:login OR inurl:signin" },
+      { name: "Admin Pages", dork: "site:{{target}} inurl:admin OR inurl:administrator" },
+      { name: "Forgot Password", dork: "site:{{target}} inurl:forgot" },
+      { name: "Signup Pages", dork: "site:{{target}} inurl:signup OR inurl:register" },
+      { name: "SSO URLs", dork: "site:{{target}} sso OR single sign on" }
+    ];
+
+    // DOM elements
+    const targetInput = document.getElementById("targetInput");
+    const dorkInput = document.getElementById("dorkInput");
+    const dorkList = document.getElementById("dorkList");
+    const savedDorksList = document.getElementById("savedDorksList");
+    const searchBtn = document.getElementById("searchBtn");
+    const resetBtn = document.getElementById("resetBtn");
+
+    // Load saved dorks from localStorage or initialize empty array
+    let savedDorks = JSON.parse(localStorage.getItem("savedDorks")) || [];
+
+    // Helper: Replace {{target}} in dork with user input, else leave as-is
+    function buildDork(dorkTemplate, target) {
+      if (!target) return dorkTemplate.replace(/{{target}}/g, "");
+      return dorkTemplate.replace(/{{target}}/g, target.trim());
+    }
+
+    // Render bug bounty dork buttons
+    function renderDorkList() {
+      dorkList.innerHTML = "";
+      bugBountyDorks.forEach(({ name, dork }, idx) => {
+        const btn = document.createElement("button");
+        btn.className = "bg-gray-700 hover:bg-purple-600 transition rounded-md py-2 px-3 text-left text-sm truncate shadow";
+        btn.title = dork;
+        btn.textContent = name;
+        btn.addEventListener("click", () => {
+          const builtDork = buildDork(dork, targetInput.value);
+          dorkInput.value = builtDork;
+          saveDork(builtDork);
+        });
+        dorkList.appendChild(btn);
+      });
+    }
+
+    // Render saved dorks in UI
+    function renderSavedDorks() {
+      savedDorksList.innerHTML = "";
+      if (savedDorks.length === 0) {
+        savedDorksList.innerHTML = '<p class="text-gray-400 italic">No saved dorks yet. Click any dork above to save it here.</p>';
+        return;
+      }
+
+      savedDorks.forEach((dorkText, idx) => {
+        const div = document.createElement("div");
+        div.className = "flex items-center justify-between bg-gray-700 rounded p-2";
+        
+        const span = document.createElement("span");
+        span.className = "truncate pr-4";
+        span.textContent = dorkText;
+
+        const btnsDiv = document.createElement("div");
+        btnsDiv.className = "flex gap-2";
+
+        const useBtn = document.createElement("button");
+        useBtn.className = "text-purple-400 hover:text-purple-600";
+        useBtn.title = "Use this dork";
+        useBtn.innerHTML = "➡️";
+        useBtn.onclick = () => {
+          dorkInput.value = dorkText;
+        };
+
+        const delBtn = document.createElement("button");
+        delBtn.className = "text-red-400 hover:text-red-600";
+        delBtn.title = "Delete this dork";
+        delBtn.innerHTML = "🗑️";
+        delBtn.onclick = () => {
+          savedDorks.splice(idx, 1);
+          localStorage.setItem("savedDorks", JSON.stringify(savedDorks));
+          renderSavedDorks();
+        };
+
+        btnsDiv.appendChild(useBtn);
+        btnsDiv.appendChild(delBtn);
+
+        div.appendChild(span);
+        div.appendChild(btnsDiv);
+
+        savedDorksList.appendChild(div);
+      });
+    }
+
+    // Save dork if not already saved (deduplicate)
+    function saveDork(dork) {
+      if (!dork.trim()) return;
+      if (!savedDorks.includes(dork)) {
+        savedDorks.unshift(dork);
+        if (savedDorks.length > 50) savedDorks.pop(); // Keep last 50 max
+        localStorage.setItem("savedDorks", JSON.stringify(savedDorks));
+        renderSavedDorks();
+      }
+    }
+
+    // Search on X.com with the dork query
+    function searchX() {
+      const query = dorkInput.value.trim();
+      if (!query) {
+        alert("Please enter a dork/search query first.");
+        return;
+      }
+      const url = `https://x.com/search?q=${encodeURIComponent(query)}`;
+      window.open(url, "_blank");
+    }
+
+    // Reset all saved dorks
+    resetBtn.addEventListener("click", () => {
+      if (confirm("Clear all saved dorks? This cannot be undone.")) {
+        savedDorks = [];
+        localStorage.removeItem("savedDorks");
+        renderSavedDorks();
+      }
+    });
+
+    // Search button event
+    searchBtn.addEventListener("click", searchX);
+
+    // Init
+    renderDorkList();
+    renderSavedDorks();
+  </script>
+</body>
+</html>
